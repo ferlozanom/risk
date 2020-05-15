@@ -325,11 +325,6 @@ class Board(object):
         Returns:
             [int]: a list of territory_ids representing the valid attack path; if no path exists, then it returns None instead
 
-        hd.popitem() #returns [k,v], get minimum value in a dictionary at a given moment k = key, v = value 
-
-        the values inside priority queue are going to be the total number of armies in a given territory and we always want to be looking at what is the next territory that has the lowes number of armies 
-
-
         '''
         player_id = self.owner(source)
 
