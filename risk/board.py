@@ -16,7 +16,6 @@ Move = namedtuple('Attack', ['from_territory_id', 'from_armies', 'to_territory_i
 #player_id = color circle
 #armies = number inside circle 
 
-#we will probably only need 50 lines of code, many of this are not necessary
 class Board(object):
     """
     The Board object keeps track of all armies situated on the Risk
@@ -55,7 +54,6 @@ class Board(object):
     # == Neighbor Methods == #
     # ====================== #   
 
-    #when you are doing breath first search, you will need to know what are the neighboors of a particular territory, important function
     def neighbors(self, territory_id):
         """
         Create a generator of all territories neighboring a given territory.
@@ -69,7 +67,6 @@ class Board(object):
         neighbor_ids = risk.definitions.territory_neighbors[territory_id]
         return (t for t in self.data if t.territory_id in neighbor_ids)
 
-#will also be useful, filter out enemy and friendly neighboors, for two functions where you are creating paths through enemies that you can attack
     def hostile_neighbors(self, territory_id):
         """
         Create a generator of all territories neighboring a given territory, of which
@@ -85,7 +82,6 @@ class Board(object):
         neighbor_ids = risk.definitions.territory_neighbors[territory_id]
         return (t for t in self.data if (t.player_id != player_id and t.territory_id in neighbor_ids))
 
-#will be useful for fortification move, take units from one to another territory that you already own. we don't have to use them directly, we can look at the inside of the code (neighbor_ids)
     def friendly_neighbors(self, territory_id):
         """
         Create a generator of all territories neighboring a given territory, of which
@@ -105,7 +101,6 @@ class Board(object):
     # ================== #
     # == Path Methods == #
     # ================== #
-#start from up to bottom
 
     def is_valid_path(self, path):
         '''
@@ -295,7 +290,6 @@ class Board(object):
             current_t = q.popleft()
             #If current_territory is the target
             if current_t == target:
-                #return the dictionary[current_territory]
                 valid_move = True
             #For each territory in the neighbors of current_territory that is not in the visited set
             neighbor_ids = risk.definitions.territory_neighbors[current_t]
@@ -331,36 +325,6 @@ class Board(object):
         Returns:
             [int]: a list of territory_ids representing the valid attack path; if no path exists, then it returns None instead
 
-        ####################
-        Create a dictionary whose keys are territories and values are path
-        Set dictionary[source] = [source]
-    ++  Create a PRIORITY queue
-    ++  Enqueue source onto the PRIORITY queue WITH PRIORITY 0
-        Create a set of visited territories
-        Add source to the set
-
-    ++  While the PRIORITY queue is not empty
-    ++      Dequeue current_territory from the PRIORITY queue
-            If current_territory is the target
-                return the dictionary[current_territory]
-            For each territory in the neighbors of current_territory that is not in the visited set
-                Make a copy of dictionary[current_territory]
-                Push territory onto the copy
-    ++          CALCULATE THE PRIORITY OF THE PATH AS PRIORITY OF CURRENT_TERRITORY + NUMBER OF ARMIES ON TERRITORY
-    ++          IF TERRITORY NOT IN THE PRIORITY QUEUE
-                    Set dictionary[current_territory] = copy + territory
-    ++              Enqueue territory WITH PRIORITY
-    ++          ELSE, IF THE NEW PRIORITY IS LESS THEN THE PRIORITY IN THE QUEUE
-                    Set dictionary[current_territory] = copy + territory
-    ++              UPDATE THE TERRITORY'S PRIORITY IN THE PRIORITY QUEUE WITH THE NEW PRIORITY
-            Add current_territory to the visited set
-
-        ###########################
-
-        hd = heapdict.heapdict()
-        hd['argentina'] = 5
-        hd['brazil'] = 4
-
         hd.popitem() #returns [k,v], get minimum value in a dictionary at a given moment k = key, v = value 
 
         the values inside priority queue are going to be the total number of armies in a given territory and we always want to be looking at what is the next territory that has the lowes number of armies 
@@ -373,9 +337,9 @@ class Board(object):
         Dict = {}
         #Set dictionary[source] = [source]
         Dict[source] = [source]
-        #Create a queue
+        #Create a priority queue
         hd = heapdict.heapdict()
-        #Enqueue source onto the queue
+        #Enqueue source onto the queue with a priority of 0
         hd[source] = 0
         #Create a set of visited territories
         visited_t = set()
@@ -383,7 +347,7 @@ class Board(object):
         visited_t.add(source)
         #While the queue is not empty
         while hd:
-            #Dequeue current_territory from the queue
+            #Dequeue current_territory and priority from the queue
             (current_t,priority) = hd.popitem()
             #If current_territory is the target
             if current_t == target:
@@ -391,7 +355,7 @@ class Board(object):
                     return None
                 #return the dictionary[current_territory]
                 return Dict[current_t]
-            #For each territory in the neighbors of current_territory that is not in the visited set
+            #For each territory in the hostile neighbors of current_territory that is not in the visited set
             neighbor_ids = risk.definitions.territory_neighbors[current_t]
             for t in neighbor_ids:
                 neighbor_owner = self.owner(t)
@@ -401,20 +365,15 @@ class Board(object):
                     #Push territory onto the copy
                     Dict_copy.append(t)
                     priority_path = priority + self.armies(t)
-                    # how can you check if t in hd? 
                     if t not in hd:
                         #Set dictionary[territory] = copy + territory
                         Dict[t] = Dict_copy
-                        print('Dict[t]=',Dict[t])
-                        #Enqueue territory
+                        #Enqueue territory with priority path
                         hd[t] = priority_path
-                        print('path_priority=',priority_path)
                     else:
                         if priority_path < hd[t]:
                             Dict[t] = Dict_copy
-                            print('previous priority=',hd[t])
                             hd[t] = priority_path
-                            print('new priority=', hd[t])
                 #Add territory to the visited set
                 visited_t.add(t)
 
@@ -436,7 +395,7 @@ class Board(object):
         Dict[source] = [source]
         #Create a queue
         hd = heapdict.heapdict()
-        #Enqueue source onto the queue
+        #Enqueue source onto the queue with a priority of 0
         hd[source] = 0
         #Create a set of visited territories
         visited_t = set()
@@ -450,9 +409,8 @@ class Board(object):
             if current_t == target:
                 if current_t == source:
                     return None
-                #return the dictionary[current_territory]
                 valid_move = True
-            #For each territory in the neighbors of current_territory that is not in the visited set
+            #For each territory in the hostile neighbors of current_territory that is not in the visited set
             neighbor_ids = risk.definitions.territory_neighbors[current_t]
             for t in neighbor_ids:
                 neighbor_owner = self.owner(t)
@@ -462,26 +420,20 @@ class Board(object):
                     #Push territory onto the copy
                     Dict_copy.append(t)
                     priority_path = priority + self.armies(t)
-                    # how can you check if t in hd? 
                     if t not in hd:
                         #Set dictionary[territory] = copy + territory
                         Dict[t] = Dict_copy
-                        print('Dict[t]=',Dict[t])
-                        #Enqueue territory
+                        #Enqueue territory with priority_path
                         hd[t] = priority_path
-                        print('path_priority=',priority_path)
                     else:
                         if priority_path < hd[t]:
                             Dict[t] = Dict_copy
-                            print('previous priority=',hd[t])
                             hd[t] = priority_path
-                            print('new priority=', hd[t])
                 #Add territory to the visited set
                 visited_t.add(t)
 
         return valid_move
 
-#some of the algorithms that you have to implement are already implemented down here
     # ==================== #
     # == Action Methods == #
     # ==================== #    
@@ -586,7 +538,7 @@ class Board(object):
     # ====================== #
     # == Plotting Methods == #
     # ====================== #    
-#will be very useful for debugging, especially board.plot_board() and board.plot_board(path = path) 
+    
     def plot_board(self, path=None, plot_graph=False, filename=None):
         """ 
         Plot the board. 
@@ -673,7 +625,6 @@ class Board(object):
             ha='center', 
             size=7
             )
-#this will be useful, when its talking about a player it is stored as int [0,1,2..]. When we are deciding if it is okay to attack for x to z we have to make sure the owners are different.. 
     # ======================= #
     # == Territory Methods == #
     # ======================= #
@@ -689,7 +640,6 @@ class Board(object):
             int: Player_id that owns the territory.
         """
         return self.data[territory_id].player_id
-#when trying to determine the shortest path that you have to take, this function will be useful to determine what is the weight on each of the nodes, the number of armies on each of the nodes is the weight when we are determining what we call an attackmap
 
     def armies(self, territory_id):
         """
